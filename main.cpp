@@ -33,9 +33,9 @@ int main(int, char *[]) {
 	cv::imshow("matrix2", output2);
 	cv::imshow("matrix3", output3);
 
-	cv::imwrite("../matrix1.png", matrix1);
-	cv::imwrite("../matrix2.png", matrix2);
-	cv::imwrite("../matrix3.png", matrix3);
+	cv::imwrite("../matrix1.png", output1);
+	cv::imwrite("../matrix2.png", output2);
+	cv::imwrite("../matrix3.png", output3);
 
 	cv::waitKey(-1);
 	return 0;
