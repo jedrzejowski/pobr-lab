@@ -5,5 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenCV REQUIRED)
 
-add_executable(pobr_lab main.cpp lib.h lab2.h)
+add_executable(pobr_lab main.cpp
+        types.h
+        asserts.h
+        lib.h
+        lab2.h
+        lab3.h
+)
+
 target_link_libraries(pobr_lab PRIVATE ${OpenCV_LIBS})
