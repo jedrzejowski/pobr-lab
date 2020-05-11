@@ -1,26 +1,30 @@
 #include <queue>
 #include <list>
+#include <numeric>
 #include "types.h"
+#include "asserts.h"
 
-const std::string img_path = "../assets/kolo.dib";
+const std::string img_path = "../assets/strzalki_2.dib";
 
 
-NormalizedImage edgeFilter(NormalizedImage &image) {
-	static const cv::Mat edge_y_filter_matrix = (
-			cv::Mat_<float>(3, 3)
-					<<
-					0, -1, 0,
-					-1, 4, -1,
-					0, -1, 0
-	);
+static const cv::Mat edge_filter_matrix = (
+		cv::Mat_<float>(3, 3)
+				<<
+				0, -1, 0,
+				-1, 4, -1,
+				0, -1, 0
+);
 
-	return my_filter2D(image, edge_y_filter_matrix);
+MatrixNormalizedRGB edgeFilter(MatrixNormalizedRGB &image) {
+	assertMatrixNormalizedRGB(image);
+
+	return my_filter2D<WekselNormalizedRGB, float>(image, edge_filter_matrix);
 }
 
 MatrixGrayScale findFigure(
-		const NormalizedImage &image,
+		const MatrixNormalizedRGB &image,
 		const cv::Point2i &seed,
-		const NormalizedPixel &tolerance = NormalizedPixel(0, 0, 0)
+		const WekselNormalizedRGB &tolerance = WekselNormalizedRGB(0, 0, 0)
 ) {
 
 	const auto size = image.size();
@@ -29,14 +33,14 @@ MatrixGrayScale findFigure(
 
 	struct Step {
 		cv::Point point;
-		NormalizedPixel color;
+		WekselNormalizedRGB color;
 	};
 
 	auto queue = std::queue<Step>();
 	auto point = seed;
 
-	auto push = [&](const cv::Point &point, const NormalizedPixel &pixel) -> void {
-		if (point.x < 0 || point.x >= size.width || point.y < 0 || point.y >= size.height) {
+	auto push = [&](const cv::Point &point, const WekselNormalizedRGB &pixel) -> void {
+		if (!isPointInSize(point, size)) {
 			return;
 		}
 
@@ -75,9 +79,9 @@ MatrixGrayScale findFigure(
 }
 
 std::list<MatrixGrayScale> findFigures(
-		const NormalizedImage &image,
+		const MatrixNormalizedRGB &image,
 		float coverage = .01,
-		const NormalizedPixel &tolerance = NormalizedPixel(0, 0, 0)
+		const WekselNormalizedRGB &tolerance = WekselNormalizedRGB(0, 0, 0)
 ) {
 	auto size = image.size();
 	std::list<MatrixGrayScale> output;
@@ -93,7 +97,7 @@ std::list<MatrixGrayScale> findFigures(
 
 		// sprawdzamy czy punkt jest już w innej figurze
 		for (const auto &prev : output) {
-			if (prev(point) == 1) {
+			if (prev(point) == WekselGrayScale(1)) {
 				goto endloop;
 			}
 		}
@@ -105,6 +109,43 @@ std::list<MatrixGrayScale> findFigures(
 	}
 
 	return output;
+}
+
+float countPerimeter(const MatrixGrayScale &img) {
+	assertMatrixGrayScale(img);
+	auto size = img.size();
+	float halfs = 0, squares = 0, any = 0;
+
+	for (int x = 0; x < size.width; ++x) {
+		for (int y = 0; y < size.height; ++y) {
+			auto point = cv::Point(x, y);
+
+			if (img(point)[0] < WekselGrayScale(1)[0]) {
+
+
+				continue;
+			}
+			any++;
+
+			auto isPerimeterToo = [&](const int &dx, const int &dy) -> bool {
+				auto next = point + cv::Point(dx, dy);
+				return isPointInSize(next, size) && img(next)[0] < WekselGrayScale(1)[0];
+			};
+
+			if (isPerimeterToo(-1, -1)) ++squares;
+			if (isPerimeterToo(+1, -1)) ++squares;
+			if (isPerimeterToo(+1, +1)) ++squares;
+			if (isPerimeterToo(-1, +1)) ++squares;
+
+			if (isPerimeterToo(0, -1)) ++halfs;
+			if (isPerimeterToo(+1, 0)) ++halfs;
+			if (isPerimeterToo(-1, 0)) ++halfs;
+			if (isPerimeterToo(0, +1)) ++halfs;
+		}
+	}
+
+	std::cout << cv::sum(img) << std::endl;
+	return halfs / 2 + squares * cv::sqrt(2) / 2;
 }
 
 int main_lab3(int argc, char *argv[]) {
@@ -121,18 +162,36 @@ int main_lab3(int argc, char *argv[]) {
 	auto figures = findFigures(image);
 	auto image2 = edgeFilter(image);
 
-//	// usuwamy tło
+	// usuwamy tło
 	figures.erase(
 			std::remove_if(figures.begin(), figures.end(), [](const MatrixGrayScale &img) -> bool {
-				return img.at<WekselGrayScale>(0, 0) != 1;
+				assertMatrixGrayScale(img);
+				return img(0, 0) == WekselGrayScale(1);
 			})
 	);
 
 	int i = 0;
-	for (const auto &fig : figures) {
-		i++;
-		cv::imshow("fig" + std::to_string(i), denormalizeMatOfVec3bToMatOfVec3f(fig));
-	}
+	std::for_each(figures.begin(), figures.end(), [&](MatrixGrayScale &img) -> void {
+		assertMatrixGrayScale(img);
+		auto my_i = ++i;
+
+		std::stringstream ss;
+
+		ss << "i=" << my_i << " ";
+
+		cv::imshow("img" + std::to_string(my_i), img);
+
+		auto img_perimeter = my_filter2D<WekselGrayScale, float>(img, edge_filter_matrix);
+
+		cv::imshow("img_perimeter" + std::to_string(my_i), img_perimeter);
+
+		auto perimeter = countPerimeter(img_perimeter);
+
+		ss << perimeter << std::endl;
+
+		std::cout << ss.str() << std::endl;
+	});
+
 
 	cv::imshow("image2", denormalizeMatOfVec3bToMatOfVec3f(image2));
 

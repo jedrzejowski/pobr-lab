@@ -1,13 +1,12 @@
 #pragma once
 
 #include <opencv2/core/hal/interface.h>
+#include "types.h"
 
 #define R 2
 #define G 1
 #define B 0
 
-using NormalizedPixel = cv::Vec3f;
-using NormalizedImage = cv::Mat_<NormalizedPixel>;
 
 template<typename number_type>
 uchar trim2uchar(number_type number) {
@@ -22,7 +21,12 @@ float trimFloat(float number) {
 	return number;
 }
 
-NormalizedImage normalizeMatOfVec3bToMatOfVec3f(const cv::Mat_<cv::Vec3b> &matrix) {
+bool isPointInSize(const cv::Point &point, const cv::Size &size) {
+	return point.x >= 0 && point.y >= 0 &&
+		   point.x < size.width && point.y < size.height;
+}
+
+MatrixNormalizedRGB normalizeMatOfVec3bToMatOfVec3f(const cv::Mat_<cv::Vec3b> &matrix) {
 
 	auto output = cv::Mat_<cv::Vec3f>(matrix.rows, matrix.cols);
 
@@ -33,7 +37,7 @@ NormalizedImage normalizeMatOfVec3bToMatOfVec3f(const cv::Mat_<cv::Vec3b> &matri
 	return output;
 }
 
-cv::Mat_<cv::Vec3b> denormalizeMatOfVec3bToMatOfVec3f(const NormalizedImage &matrix) {
+cv::Mat_<cv::Vec3b> denormalizeMatOfVec3bToMatOfVec3f(const MatrixNormalizedRGB &matrix) {
 
 	auto output = cv::Mat_<cv::Vec3b>(matrix.rows, matrix.cols);
 
@@ -46,12 +50,13 @@ cv::Mat_<cv::Vec3b> denormalizeMatOfVec3bToMatOfVec3f(const NormalizedImage &mat
 	return output;
 }
 
-bool areMatrixEqual(const NormalizedImage &img1, const NormalizedImage &img2) {
+bool areMatrixEqual(const MatrixNormalizedRGB &img1, const MatrixNormalizedRGB &img2) {
 	return (sum(img1 != img2) == cv::Scalar(0, 0, 0, 0));
 }
 
 bool
-isColorWithInTolerance(const NormalizedPixel &first, const NormalizedPixel &second, const NormalizedPixel &tolerance) {
+isColorWithInTolerance(const WekselNormalizedRGB &first, const WekselNormalizedRGB &second,
+					   const WekselNormalizedRGB &tolerance) {
 	return std::abs(second[0] - first[0]) <= std::abs(tolerance[0]) &&
 		   std::abs(second[1] - first[1]) <= std::abs(tolerance[1]) &&
 		   std::abs(second[2] - first[2]) <= std::abs(tolerance[2]);

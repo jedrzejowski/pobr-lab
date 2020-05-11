@@ -8,5 +8,5 @@ using MatrixRGB = cv::Mat_<WekselRGB>;
 using WekselNormalizedRGB = cv::Vec3f;
 using MatrixNormalizedRGB = cv::Mat_<WekselNormalizedRGB>;
 
-using WekselGrayScale = unsigned char;
+using WekselGrayScale = cv::Vec<float, 1>;
 using MatrixGrayScale = cv::Mat_<WekselGrayScale>;
