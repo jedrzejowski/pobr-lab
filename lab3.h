@@ -1,5 +1,6 @@
 #include <queue>
 #include <list>
+#include "types.h"
 
 const std::string img_path = "../assets/kolo.dib";
 
@@ -16,15 +17,15 @@ NormalizedImage edgeFilter(NormalizedImage &image) {
 	return my_filter2D(image, edge_y_filter_matrix);
 }
 
-void findFigure(
+MatrixGrayScale findFigure(
 		const NormalizedImage &image,
-		NormalizedImage &figure,
 		const cv::Point2i &seed,
 		const NormalizedPixel &tolerance = NormalizedPixel(0, 0, 0)
 ) {
 
 	const auto size = image.size();
 	cv::Mat done = cv::Mat::zeros(size, CV_8U);
+	MatrixGrayScale output = MatrixGrayScale::zeros(size);
 
 	struct Step {
 		cv::Point point;
@@ -59,7 +60,7 @@ void findFigure(
 		auto new_pixel = image(point);
 
 		if (old_pixel == new_pixel) {
-			figure(point) = NormalizedPixel(1, 1, 1);
+			output.at<WekselGrayScale>(point) = 1;
 
 			push(point + cv::Point(+1, 0), new_pixel);
 			push(point + cv::Point(-1, 0), new_pixel);
@@ -69,20 +70,21 @@ void findFigure(
 
 		queue.pop();
 	} while (!queue.empty());
+
+	return output;
 }
 
-std::list<NormalizedImage> findFigures(
+std::list<MatrixGrayScale> findFigures(
 		const NormalizedImage &image,
 		float coverage = .01,
 		const NormalizedPixel &tolerance = NormalizedPixel(0, 0, 0)
 ) {
 	auto size = image.size();
-	std::list<NormalizedImage> output;
+	std::list<MatrixGrayScale> output;
 
 	auto rng = cv::RNG(time(NULL));
 
 	for (int i = 0; i < size.height * size.width * coverage; i++) {
-		NormalizedImage temp = NormalizedImage::zeros(image.size());
 
 		auto point = cv::Point2i(
 				rng.uniform(0, size.width - 1),
@@ -91,14 +93,12 @@ std::list<NormalizedImage> findFigures(
 
 		// sprawdzamy czy punkt jest już w innej figurze
 		for (const auto &prev : output) {
-			if (prev(point) == NormalizedPixel(1, 1, 1)) {
+			if (prev(point) == 1) {
 				goto endloop;
 			}
 		}
 
-		findFigure(image, temp, point);
-
-		output.push_back(temp);
+		output.push_back(findFigure(image, point));
 
 		endloop:
 		int qq;
@@ -123,8 +123,8 @@ int main_lab3(int argc, char *argv[]) {
 
 //	// usuwamy tło
 	figures.erase(
-			std::remove_if(figures.begin(), figures.end(), [](const NormalizedImage &img) -> bool {
-				return img.at<NormalizedPixel>(0, 0) != NormalizedPixel(0, 0, 0);
+			std::remove_if(figures.begin(), figures.end(), [](const MatrixGrayScale &img) -> bool {
+				return img.at<WekselGrayScale>(0, 0) != 1;
 			})
 	);
 

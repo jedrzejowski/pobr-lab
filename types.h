@@ -2,16 +2,11 @@
 
 #include <opencv2/core/mat.hpp>
 
-void assertMatrixRGB(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_8UC3);
-}
+using WekselRGB = cv::Vec3b;
+using MatrixRGB = cv::Mat_<WekselRGB>;
 
-void assertMatrixNormalizedRGB(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_8UC3);
-}
+using WekselNormalizedRGB = cv::Vec3f;
+using MatrixNormalizedRGB = cv::Mat_<WekselNormalizedRGB>;
 
-void assertMatrixGrayScale(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_8UC1);
-}
-
-
+using WekselGrayScale = unsigned char;
+using MatrixGrayScale = cv::Mat_<WekselGrayScale>;
