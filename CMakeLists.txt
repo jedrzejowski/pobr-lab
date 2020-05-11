@@ -9,6 +9,8 @@ add_executable(pobr_lab main.cpp
         types.h
         asserts.h
         lib.h
+        paramWX.h
+        paramMX.h
         lab2.h
         lab3.h
 )

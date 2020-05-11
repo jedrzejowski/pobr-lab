@@ -3,15 +3,18 @@
 #include <opencv2/core/mat.hpp>
 
 void assertMatrixRGB(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_8UC3);
+	static auto source = MatrixRGB();
+	CV_Assert(matrix.type() == source.type());
 }
 
 void assertMatrixNormalizedRGB(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_32FC3);
+	static auto source = MatrixNormalizedRGB();
+	CV_Assert(matrix.type() == source.type());
 }
 
 void assertMatrixGrayScale(const cv::Mat &matrix) {
-	CV_Assert(matrix.type() == CV_32FC1);
+	static auto source = MatrixGrayScale();
+	CV_Assert(matrix.type() == source.type());
 }
 
 

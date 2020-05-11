@@ -1,14 +1,16 @@
 #include <queue>
 #include <list>
 #include <numeric>
+#include <atomic>
 #include "types.h"
 #include "asserts.h"
+#include "paramWX.h"
 
 const std::string img_path = "../assets/strzalki_2.dib";
 
 
 static const cv::Mat edge_filter_matrix = (
-		cv::Mat_<float>(3, 3)
+		cv::Mat_<real>(3, 3)
 				<<
 				0, -1, 0,
 				-1, 4, -1,
@@ -80,7 +82,7 @@ MatrixGrayScale findFigure(
 
 std::list<MatrixGrayScale> findFigures(
 		const MatrixNormalizedRGB &image,
-		float coverage = .01,
+		real coverage = .01,
 		const WekselNormalizedRGB &tolerance = WekselNormalizedRGB(0, 0, 0)
 ) {
 	auto size = image.size();
@@ -111,41 +113,51 @@ std::list<MatrixGrayScale> findFigures(
 	return output;
 }
 
-float countPerimeter(const MatrixGrayScale &img) {
+real countPerimeter(const MatrixGrayScale &img) {
 	assertMatrixGrayScale(img);
 	auto size = img.size();
-	float halfs = 0, squares = 0, any = 0;
+	std::atomic<int> halfs = 0, squares = 0;
 
-	for (int x = 0; x < size.width; ++x) {
-		for (int y = 0; y < size.height; ++y) {
-			auto point = cv::Point(x, y);
+//	for (int x = 0; x < size.width; ++x) {
+//		for (int y = 0; y < size.height; ++y) {
 
-			if (img(point)[0] < WekselGrayScale(1)[0]) {
+	img.forEach([&](const WekselGrayScale &weksel, const int position[]) -> void {
 
-
-				continue;
-			}
-			any++;
-
-			auto isPerimeterToo = [&](const int &dx, const int &dy) -> bool {
-				auto next = point + cv::Point(dx, dy);
-				return isPointInSize(next, size) && img(next)[0] < WekselGrayScale(1)[0];
-			};
-
-			if (isPerimeterToo(-1, -1)) ++squares;
-			if (isPerimeterToo(+1, -1)) ++squares;
-			if (isPerimeterToo(+1, +1)) ++squares;
-			if (isPerimeterToo(-1, +1)) ++squares;
-
-			if (isPerimeterToo(0, -1)) ++halfs;
-			if (isPerimeterToo(+1, 0)) ++halfs;
-			if (isPerimeterToo(-1, 0)) ++halfs;
-			if (isPerimeterToo(0, +1)) ++halfs;
+		if (weksel[0] < 0.5) {
+			return;
 		}
-	}
 
-	std::cout << cv::sum(img) << std::endl;
+		auto isPerimeterToo = [&](const int &dx, const int &dy) -> bool {
+			// tu jest na odwrót, ale to dobrze,
+			auto next = cv::Point(position[1] + dx, position[0] + dy);
+			return isPointInSize(next, size) && img(next)[0] >= 0.5;
+		};
+
+		if (isPerimeterToo(-1, -1)) ++squares;
+		if (isPerimeterToo(+1, -1)) ++squares;
+		if (isPerimeterToo(+1, +1)) ++squares;
+		if (isPerimeterToo(-1, +1)) ++squares;
+
+		if (isPerimeterToo(0, -1)) ++halfs;
+		if (isPerimeterToo(+1, 0)) ++halfs;
+		if (isPerimeterToo(-1, 0)) ++halfs;
+		if (isPerimeterToo(0, +1)) ++halfs;
+	});
+
 	return halfs / 2 + squares * cv::sqrt(2) / 2;
+}
+
+real countArea(const MatrixGrayScale &img) {
+	assertMatrixGrayScale(img);
+	std::atomic<int> sum = 0;
+
+
+	img.forEach([&](const WekselGrayScale &weksel, const int position[]) -> void {
+		if (weksel[0] >= 0.5)
+			sum += 1;
+	});
+
+	return sum;
 }
 
 int main_lab3(int argc, char *argv[]) {
@@ -181,13 +193,17 @@ int main_lab3(int argc, char *argv[]) {
 
 		cv::imshow("img" + std::to_string(my_i), img);
 
-		auto img_perimeter = my_filter2D<WekselGrayScale, float>(img, edge_filter_matrix);
+		auto img_perimeter = my_filter2D<WekselGrayScale, real>(img, edge_filter_matrix);
 
 		cv::imshow("img_perimeter" + std::to_string(my_i), img_perimeter);
 
-		auto perimeter = countPerimeter(img_perimeter);
+		auto area = countArea(img);
+		ss << "S=" << area << " ";
 
-		ss << perimeter << std::endl;
+		auto perimeter = countPerimeter(img_perimeter);
+		ss << "L=" << perimeter << " ";
+
+		ss << "W3=" << paramW3(area, perimeter) << " ";
 
 		std::cout << ss.str() << std::endl;
 	});

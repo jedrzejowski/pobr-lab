@@ -15,7 +15,7 @@ uchar trim2uchar(number_type number) {
 	return number;
 }
 
-float trimFloat(float number) {
+real trimFloat(real number) {
 	if (number > 1) return 1;
 	if (number < 0)return 0;
 	return number;
