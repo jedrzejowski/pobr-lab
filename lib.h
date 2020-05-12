@@ -2,6 +2,7 @@
 
 #include <opencv2/core/hal/interface.h>
 #include "types.h"
+#include "asserts.h"
 
 #define R 2
 #define G 1
@@ -26,26 +27,45 @@ bool isPointInSize(const cv::Point &point, const cv::Size &size) {
 		   point.x < size.width && point.y < size.height;
 }
 
-MatrixNormalizedRGB normalizeMatOfVec3bToMatOfVec3f(const cv::Mat_<cv::Vec3b> &matrix) {
+void clampGrayScaleMatrix(const MatrixGrayScale &matrix) {
+	matrix.forEach([&](WekselGrayScale &pixel, const int position[]) -> void {
+		pixel[0] = std::clamp(pixel[0], 0.f, 1.f);
+	});
+}
+
+//https://stackoverflow.com/questions/15888180/calculating-the-angle-between-points
+float angleBetweenVectors(const cv::Point &v1, const cv::Point &v2) {
+	float len1 = cv::sqrt(v1.x * v1.x + v1.y * v1.y);
+	float len2 = cv::sqrt(v2.x * v2.x + v2.y * v2.y);
+
+	float dot = v1.x * v2.x + v1.y * v2.y;
+
+	float a = dot / (len1 * len2);
+
+
+	return acos(a); // 0..PI
+}
+
+MatrixNormalizedRGB normalizeMatOfVec3bToMatOfVec3f(const MatrixRGB &matrix) {
+	assertMatrixRGB(matrix);
 
 	auto output = cv::Mat_<cv::Vec3f>(matrix.rows, matrix.cols);
 
-	matrix.forEach([&](cv::Vec3b &pixel, const int position[]) -> void {
-		output(position[0], position[1]) = pixel / 255;
+	matrix.forEach([&](const WekselRGB &pixel, const int position[]) -> void {
+		output(position[0], position[1]) = WekselNormalizedRGB(pixel) / 255;
 	});
 
 	return output;
 }
 
-cv::Mat_<cv::Vec3b> denormalizeMatOfVec3bToMatOfVec3f(const MatrixNormalizedRGB &matrix) {
+MatrixRGB denormalizeMatOfVec3bToMatOfVec3f(const MatrixNormalizedRGB &matrix) {
+	assertMatrixNormalizedRGB(matrix);
 
-	auto output = cv::Mat_<cv::Vec3b>(matrix.rows, matrix.cols);
+	auto output = MatrixRGB(matrix.rows, matrix.cols);
 
-	for (int x = 0; x < matrix.cols; ++x) {
-		for (int y = 0; y < matrix.rows; ++y) {
-			output(x, y) = matrix(x, y) * 225;
-		}
-	}
+	matrix.forEach([&](const WekselNormalizedRGB &pixel, const int position[]) -> void {
+		output(position[0], position[1]) = WekselRGB(pixel * 255);
+	});
 
 	return output;
 }

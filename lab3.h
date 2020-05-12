@@ -5,8 +5,7 @@
 #include "types.h"
 #include "asserts.h"
 #include "paramWX.h"
-
-const std::string img_path = "../assets/strzalki_2.dib";
+#include "paramMX.h"
 
 
 static const cv::Mat edge_filter_matrix = (
@@ -17,7 +16,7 @@ static const cv::Mat edge_filter_matrix = (
 				0, -1, 0
 );
 
-MatrixNormalizedRGB edgeFilter(MatrixNormalizedRGB &image) {
+MatrixNormalizedRGB edgeFilter(const MatrixNormalizedRGB &image) {
 	assertMatrixNormalizedRGB(image);
 
 	return my_filter2D<WekselNormalizedRGB, float>(image, edge_filter_matrix);
@@ -118,9 +117,6 @@ real countPerimeter(const MatrixGrayScale &img) {
 	auto size = img.size();
 	std::atomic<int> halfs = 0, squares = 0;
 
-//	for (int x = 0; x < size.width; ++x) {
-//		for (int y = 0; y < size.height; ++y) {
-
 	img.forEach([&](const WekselGrayScale &weksel, const int position[]) -> void {
 
 		if (weksel[0] < 0.5) {
@@ -160,19 +156,22 @@ real countArea(const MatrixGrayScale &img) {
 	return sum;
 }
 
-int main_lab3(int argc, char *argv[]) {
-	auto image = normalizeMatOfVec3bToMatOfVec3f(cv::imread(img_path));
+int main_lab3(const char *img_path, bool angle = false) {
+	auto title = std::string(img_path).substr(10);
+	std::cout << "image: " << title << std::endl;
 
+	const auto image = cv::imread(img_path);
 
 	if (image.empty()) {
 		std::cerr << "Error during reading " << img_path << std::endl;
 		return 1;
 	}
 
-	cv::imshow("image1", denormalizeMatOfVec3bToMatOfVec3f(image));
+	const auto image_normalized = normalizeMatOfVec3bToMatOfVec3f(image);
 
-	auto figures = findFigures(image);
-	auto image2 = edgeFilter(image);
+
+	auto figures = findFigures(image_normalized);
+	auto image2 = edgeFilter(image_normalized);
 
 	// usuwamy tło
 	figures.erase(
@@ -182,20 +181,15 @@ int main_lab3(int argc, char *argv[]) {
 			})
 	);
 
-	int i = 0;
 	std::for_each(figures.begin(), figures.end(), [&](MatrixGrayScale &img) -> void {
 		assertMatrixGrayScale(img);
-		auto my_i = ++i;
+		auto size = img.size();
 
 		std::stringstream ss;
-
-		ss << "i=" << my_i << " ";
-
-		cv::imshow("img" + std::to_string(my_i), img);
+		ss << "    ";
 
 		auto img_perimeter = my_filter2D<WekselGrayScale, real>(img, edge_filter_matrix);
-
-		cv::imshow("img_perimeter" + std::to_string(my_i), img_perimeter);
+		clampGrayScaleMatrix(img_perimeter);
 
 		auto area = countArea(img);
 		ss << "S=" << area << " ";
@@ -203,14 +197,46 @@ int main_lab3(int argc, char *argv[]) {
 		auto perimeter = countPerimeter(img_perimeter);
 		ss << "L=" << perimeter << " ";
 
-		ss << "W3=" << paramW3(area, perimeter) << " ";
+		ss << "W3=" << param::W3(area, perimeter) << " ";
+		ss << "M1=" << param::M1(img) << " ";
+		ss << "M7=" << param::M7(img) << " ";
+
+		real max_X = -1, min_X = size.width;
+		real max_Y = -1, min_Y = size.height;
+		for (int x = 0; x < size.width; ++x) {
+			for (int y = 0; y < size.height; ++y) {
+				if (img(cv::Point(x, y))[0] >= 0.5) {
+					if (max_X < x) max_X = x;
+					if (max_Y < y) max_Y = y;
+					if (min_X > x) min_X = x;
+					if (min_Y > y) min_Y = y;
+				}
+			}
+		}
+
+		auto geo_center = cv::Point2f((max_X + min_X) / 2, (max_Y + min_Y) / 2);
+		ss << "geo_center=" << geo_center << " ";
+
+		if (angle) {
+			auto dash_i = param::m_pq(img, 1, 0) / param::m_pq(img, 0, 0);
+			auto dash_j = param::m_pq(img, 0, 1) / param::m_pq(img, 0, 0);
+			auto img_center = cv::Point2f(dash_j, dash_i);
+			ss << "img_center=" << img_center << " ";
+
+			auto direction = img_center - geo_center;
+			ss << "direction=" << direction << " ";
+
+			static auto rel_vec = cv::Point(-1, 0);
+			real angle = angleBetweenVectors(rel_vec, direction);
+			ss << "angle=" << angle * 180 / CV_PI << " ";
+		}
 
 		std::cout << ss.str() << std::endl;
 	});
 
 
-	cv::imshow("image2", denormalizeMatOfVec3bToMatOfVec3f(image2));
+//	cv::imshow(title, image);
+//	cv::imshow("image2", denormalizeMatOfVec3bToMatOfVec3f(image2));
 
-	cv::waitKey(-1);
 	return 0;
 }
