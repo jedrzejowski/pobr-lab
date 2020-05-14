@@ -215,20 +215,20 @@ int main_lab3(const char *img_path, bool angle = false) {
 		}
 
 		auto geo_center = cv::Point2f((max_X + min_X) / 2, (max_Y + min_Y) / 2);
-		ss << "geo_center=" << geo_center << " ";
+//		ss << "geo_center=" << geo_center << " ";
 
 		if (angle) {
 			auto dash_i = param::m_pq(img, 1, 0) / param::m_pq(img, 0, 0);
 			auto dash_j = param::m_pq(img, 0, 1) / param::m_pq(img, 0, 0);
 			auto img_center = cv::Point2f(dash_j, dash_i);
-			ss << "img_center=" << img_center << " ";
+//			ss << "img_center=" << img_center << " ";
 
 			auto direction = img_center - geo_center;
-			ss << "direction=" << direction << " ";
+//			ss << "direction=" << direction << " ";
 
 			static auto rel_vec = cv::Point(-1, 0);
 			real angle = angleBetweenVectors(rel_vec, direction);
-			ss << "angle=" << angle * 180 / CV_PI << " ";
+			ss << "R=" << angle * 180 / CV_PI << " ";
 		}
 
 		std::cout << ss.str() << std::endl;
