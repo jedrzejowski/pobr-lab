@@ -192,14 +192,8 @@ int main_lab3(const char *img_path, bool angle = false) {
 		clampGrayScaleMatrix(img_perimeter);
 
 		auto area = countArea(img);
-		ss << "S=" << area << " ";
 
 		auto perimeter = countPerimeter(img_perimeter);
-		ss << "L=" << perimeter << " ";
-
-		ss << "W3=" << param::W3(area, perimeter) << " ";
-		ss << "M1=" << param::M1(img) << " ";
-		ss << "M7=" << param::M7(img) << " ";
 
 		real max_X = -1, min_X = size.width;
 		real max_Y = -1, min_Y = size.height;
@@ -230,6 +224,12 @@ int main_lab3(const char *img_path, bool angle = false) {
 			real angle = angleBetweenVectors(rel_vec, direction);
 			ss << "R=" << angle * 180 / CV_PI << " ";
 		}
+
+		ss << "S=" << area << " ";
+		ss << "L=" << perimeter << " ";
+		ss << "W3=" << param::W3(area, perimeter) << " ";
+		ss << "M1=" << param::M1(img) << " ";
+		ss << "M7=" << param::M7(img) << " ";
 
 		std::cout << ss.str() << std::endl;
 	});
