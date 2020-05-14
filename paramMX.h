@@ -57,6 +57,6 @@ namespace param {
 	}
 
 	real M7(const MatrixGrayScale &image) {
-		return (M_20(image) * M_02(image) - cv::pow(M_11(image), 2)) / m_pq(image, 0, 0);
+		return (M_20(image) * M_02(image) - cv::pow(M_11(image), 2)) / cv::pow(m_pq(image, 0, 0), 4);
 	}
 }
