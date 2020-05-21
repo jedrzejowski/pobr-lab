@@ -12,7 +12,7 @@ namespace param {
 		for (int i = 0; i < matrix.rows; ++i) {
 			for (int j = 0; j < matrix.cols; ++j) {
 
-				sum += cv::pow(i, p) * cv::pow(j, q) * matrix(i, j)[0];
+				sum += cv::pow(i + 1, p) * cv::pow(j + 1, q) * matrix(i, j)[0];
 			}
 		}
 
@@ -33,7 +33,7 @@ namespace param {
 		for (int i = 0; i < matrix.rows; ++i) {
 			for (int j = 0; j < matrix.cols; ++j) {
 
-				sum += cv::pow(1 - dash_i, p) * cv::pow(1 - dash_j, q) * matrix(i, j)[0];
+				sum += cv::pow(i + 1 - dash_i, p) * cv::pow(j + 1 - dash_j, q) * matrix(i, j)[0];
 			}
 		}
 

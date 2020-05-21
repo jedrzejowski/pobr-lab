@@ -2,7 +2,7 @@
 
 #include <opencv2/core/mat.hpp>
 
-using real = float;
+using real = double;
 
 using WekselRGB = cv::Vec3b;
 using MatrixRGB = cv::Mat_<WekselRGB>;
